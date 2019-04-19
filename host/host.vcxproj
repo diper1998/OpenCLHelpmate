@@ -163,11 +163,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="device.h" />
-    <ClInclude Include="helpmate.h" />
-    <ClInclude Include="kernel.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="program.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="host.cpp" />

@@ -1,70 +1,125 @@
-﻿// host.cpp : Этот файл содержит функцию "main". Здесь начинается и
-// заканчивается выполнение программы.
-//
-
-#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#include <CL/cl.h>
+﻿#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <iostream>
-#include "helpmate.h"
+#include "lib/helpmate.h"
+
+void clSumVectors(const int size, int sizeOffset);
+void clMulMatrix(const int size, int sizeOffset);
 
 int main() {
- 
-  std::vector<std::string> funNames;
+ // clSumVectors(10000, 6000);
+    clMulMatrix(3000, 1500);
+}
 
-  funNames.push_back("sumVectors");
+void clMulMatrix(const int size, int sizeOffset) {
+  std::vector<std::string> functionsNames;
+  functionsNames.push_back("mulMatrix");
 
-  helpmate helpMate("kernelCode.cl", funNames);
-
-  
+  helpmate helpMate("kernelCode.cl", functionsNames);
 
   std::vector<size_t> mySizes;
-  const int mySize = 10000;
-  mySizes.push_back(mySize * sizeof(float));
-  mySizes.push_back(mySize * sizeof(float));
-  mySizes.push_back(mySize * sizeof(float));
 
-  float* A = new float[mySize];
-  float* B = new float[mySize];
-  float* C = new float[mySize];
+  mySizes.push_back(size * size * sizeof(float));
+  mySizes.push_back(size * size * sizeof(float));
+  mySizes.push_back(size * size * sizeof(float));
+  mySizes.push_back(sizeof(const int*));
 
-  for (int i = 0; i < mySize; i++) {
+  float* A = new float[size * size];
+  float* B = new float[size * size];
+  float* C = new float[size * size];
+
+  for (int i = 0; i < size * size; i++) {
+    A[i] = 1.0;
+    B[i] = 2.0;
+    C[i] = 0;
+  }
+
+  int* ptrSize = new int;
+  *ptrSize = size;
+
+  helpMate.SetBuffers(mySizes);
+
+  helpMate.WriteBuffer("GPU", 0, CL_FALSE, 0, mySizes[0], A);
+  helpMate.WriteBuffer("GPU", 1, CL_FALSE, 0, mySizes[1], B);
+  helpMate.WriteBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
+  helpMate.WriteBuffer("GPU", 3, CL_FALSE, 0, mySizes[3], ptrSize);
+  helpMate.Wait("GPU");
+
+  helpMate.SetArgument(0, 0, 0);
+  helpMate.SetArgument(0, 1, 1);
+  helpMate.SetArgument(0, 2, 2);
+  helpMate.SetArgument(0, 3, 3);
+
+  
+  
+  helpMate.Start("GPU", CL_FALSE, 0, 0, 0, sizeOffset, size, NULL, NULL);
+  helpMate.Start("CPU", CL_FALSE, 0, sizeOffset, 0, size - sizeOffset, size, NULL, NULL);
+
+ 
+  
+  helpMate.Wait("GPU");
+  helpMate.Wait("CPU");
+
+  helpMate.ReadBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
+  helpMate.Wait("GPU");
+
+  for (int i = 0; i < size * size; i++) {
+    if (C[i] != size * 2){ 
+      std::cout << "Error";
+      break;
+    }
+  }
+  /*
+  for (int i = 0; i < size; i++) {
+    for (int j = 0; j < size; j++) {
+        std::cout << C[i*size+j] << " ";
+    }
+    std::cout << std::endl;
+  }
+  */
+}
+
+void clSumVectors(int size, int sizeOffset) {
+  std::vector<std::string> functionsNames;
+  functionsNames.push_back("sumVectors");
+
+  helpmate helpMate("kernelCode.cl", functionsNames);
+
+  std::vector<size_t> mySizes;
+
+  mySizes.push_back(size * sizeof(float));
+  mySizes.push_back(size * sizeof(float));
+  mySizes.push_back(size * sizeof(float));
+
+  float* A = new float[size];
+  float* B = new float[size];
+  float* C = new float[size];
+
+  for (int i = 0; i < size; i++) {
     A[i] = 1.5;
     B[i] = 1.5;
   }
 
   helpMate.SetBuffers(mySizes);
 
-  helpMate.WriteBuffer("CPU", 0, CL_TRUE, 0, mySizes[0], A);
-  helpMate.WriteBuffer("CPU", 1, CL_TRUE, 0, mySizes[1], B);
-  helpMate.WriteBuffer("CPU", 2, CL_TRUE, 0, mySizes[2], C);
+  helpMate.WriteBuffer("GPU", 0, CL_FALSE, 0, mySizes[0], A);
+  helpMate.WriteBuffer("GPU", 1, CL_FALSE, 0, mySizes[1], B);
+  helpMate.WriteBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
+  helpMate.Wait("GPU");
 
   helpMate.SetArgument(0, 0, 0);
   helpMate.SetArgument(0, 1, 1);
   helpMate.SetArgument(0, 2, 2);
 
-  helpMate.Start("GPU", CL_FALSE, 0, 0, mySize/2, NULL);
-  helpMate.Start("CPU", CL_FALSE, 0, 5000, mySize/2, NULL);
+  helpMate.Start("GPU", CL_FALSE, 0, 0, sizeOffset, NULL);
+  helpMate.Start("CPU", CL_FALSE, 0, sizeOffset, size - sizeOffset, NULL);
   helpMate.Wait("GPU");
   helpMate.Wait("CPU");
 
-  helpMate.ReadBuffer("CPU", 2, CL_TRUE, 0, mySizes[2], C);
+  helpMate.ReadBuffer("GPU", 2, CL_TRUE, 0, mySizes[2], C);
 
-  for (int i = 0; i < mySize; i++) {
-    std::cout << C[i] << " ";
+  for (int i = 0; i < size; i++) {
+    if (C[i] != 3) {
+    std::cout << "Error";
+      }
   }
 }
-
-// Запуск программы: CTRL+F5 или меню "Отладка" > "Запуск без отладки"
-// Отладка программы: F5 или меню "Отладка" > "Запустить отладку"
-
-// Советы по началу работы
-//   1. В окне обозревателя решений можно добавлять файлы и управлять ими.
-//   2. В окне Team Explorer можно подключиться к системе управления версиями.
-//   3. В окне "Выходные данные" можно просматривать выходные данные сборки и
-//   другие сообщения.
-//   4. В окне "Список ошибок" можно просматривать ошибки.
-//   5. Последовательно выберите пункты меню "Проект" > "Добавить новый
-//   элемент", чтобы создать файлы кода, или "Проект" > "Добавить существующий
-//   элемент", чтобы добавить в проект существующие файлы кода.
-//   6. Чтобы снова открыть этот проект позже, выберите пункты меню "Файл" >
-//   "Открыть" > "Проект" и выберите SLN-файл.
