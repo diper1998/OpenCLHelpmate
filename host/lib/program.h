@@ -7,9 +7,6 @@
 #include "kernel.h"
 
 class program {
-  friend class kernel;
-  friend class device;
-
  protected:
   cl::Program clProgram;
 
@@ -25,6 +22,9 @@ class program {
   program();
   ~program();
 };
+
+program::program() {}
+program::~program() {}
 
 void program::SetProgram(cl::Context myContext, cl::Program::Sources mySources,
                          cl::Device myCPU, cl::Device myGPU) {
@@ -43,19 +43,11 @@ void program::BuildProgram(cl::Device myCPU, cl::Device myGPU) {
   }
 }
 
- void program::GetBuildInfo(cl::Device myCPU, cl::Device myGPU) {
-    std::cout << "CPU:" << std::endl
-              << clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(myCPU)
-              << std::endl
-              << "GPU:" << std::endl
-              << clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(myGPU)
-              << std::endl;
-  }
+void program::GetBuildInfo(cl::Device myCPU, cl::Device myGPU) {
+  std::cout << "CPU:" << std::endl
+            << clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(myCPU) << std::endl
+            << "GPU:" << std::endl
+            << clProgram.getBuildInfo<CL_PROGRAM_BUILD_LOG>(myGPU) << std::endl;
+}
 
-
-
-
-cl::Program* program::GetProgramPoint(){ return &clProgram;}
-program::program() {}
-
-program::~program() {}
+cl::Program* program::GetProgramPoint() { return &clProgram; }

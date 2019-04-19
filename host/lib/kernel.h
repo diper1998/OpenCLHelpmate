@@ -1,6 +1,5 @@
 #pragma once
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
-#include <Windows.h>
 #include <CL/cl.hpp>
 #include <fstream>
 #include <iostream>
@@ -14,10 +13,6 @@ class kernel {
   std::vector<cl::Buffer> clBuffers;
 
  public:
-  kernel();
-
-  ~kernel();
-
   std::string ReadKernelCode(std::string myFileName);
   void SetSources(std::string myKernelCode);
   void GetKernelCodeInfo();
@@ -25,13 +20,18 @@ class kernel {
   cl::Kernel* GetFunctionPoint(unsigned int index);
   void SetBuffer(cl::Context myContext, size_t mySize);
   cl::Buffer GetBuffer(unsigned int index);
+  unsigned int GetSizeBuffers();
   void SetArg(cl::Kernel& myKernelFunction, unsigned int numbArg,
               cl::Buffer myBuffer);
+  void SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
+              size_t mySizeData, const void* myPtrData);
   cl::Program::Sources GetSources();
+
+  kernel();
+  ~kernel();
 };
 
 kernel::kernel() {}
-
 kernel::~kernel() {}
 
 std::string kernel::ReadKernelCode(std::string myFileName) {
@@ -39,8 +39,7 @@ std::string kernel::ReadKernelCode(std::string myFileName) {
   if (!myFile.is_open()) {
     std::cout << "ERROR:";
     std::cout << "ReadKernelCode():";
-    std::cout << myFileName << " isn't open.";
-    exit(1);
+    std::cout << myFileName << " isn't finded.";
   }
   myFile.seekg(0, std::ios::end);
   size_t size = myFile.tellg();
@@ -74,11 +73,20 @@ void kernel::SetBuffer(cl::Context myContext, size_t mySize) {
 
 cl::Buffer kernel::GetBuffer(unsigned int index) { return clBuffers[index]; }
 
+inline unsigned int kernel::GetSizeBuffers() { return clBuffers.size(); }
+
 cl::Kernel* kernel::GetFunctionPoint(unsigned int index) {
   return &clKernelFunctions[index];
 }
 
 void kernel::SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
                     cl::Buffer myBuffer) {
-  myKernelFunction.setArg(indexArg, myBuffer);
+  if (myKernelFunction.setArg(indexArg, myBuffer) != CL_SUCCESS)
+    std::cout << "Error setArg: " << indexArg << std::endl;
+}
+
+void kernel::SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
+                    size_t mySizeData, const void* myPtrData) {
+  if (myKernelFunction.setArg(indexArg, mySizeData, myPtrData) != CL_SUCCESS)
+    std::cout << "Error setArg: " << indexArg << std::endl;
 }
