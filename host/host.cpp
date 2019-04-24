@@ -7,7 +7,7 @@ void clMulMatrix(const int size, int sizeOffset);
 
 int main() {
  // clSumVectors(10000, 6000);
-    clMulMatrix(3000, 1500);
+    clMulMatrix(1001, 500);
 }
 
 void clMulMatrix(const int size, int sizeOffset) {
@@ -36,31 +36,24 @@ void clMulMatrix(const int size, int sizeOffset) {
   int* ptrSize = new int;
   *ptrSize = size;
 
-  helpMate.SetBuffers(mySizes);
-
-  helpMate.WriteBuffer("GPU", 0, CL_FALSE, 0, mySizes[0], A);
-  helpMate.WriteBuffer("GPU", 1, CL_FALSE, 0, mySizes[1], B);
-  helpMate.WriteBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
-  helpMate.WriteBuffer("GPU", 3, CL_FALSE, 0, mySizes[3], ptrSize);
-  helpMate.Wait("GPU");
-
-  helpMate.SetArgument(0, 0, 0);
-  helpMate.SetArgument(0, 1, 1);
-  helpMate.SetArgument(0, 2, 2);
-  helpMate.SetArgument(0, 3, 3);
-
+  helpMate.SetArgument(0, 0, mySizes[0], A);
+  helpMate.SetArgument(0, 1, mySizes[1], B);
+  helpMate.SetArgument(0, 2, mySizes[2], C);
+  helpMate.SetArgument(0, 3, mySizes[3], ptrSize);
   
-  
-  helpMate.Start("GPU", CL_FALSE, 0, 0, 0, sizeOffset, size, NULL, NULL);
+ /* helpMate.Start("GPU", CL_FALSE, 0, 0, 0, sizeOffset, size, NULL, NULL);
   helpMate.Start("CPU", CL_FALSE, 0, sizeOffset, 0, size - sizeOffset, size, NULL, NULL);
-
  
-  
   helpMate.Wait("GPU");
   helpMate.Wait("CPU");
+  */
 
-  helpMate.ReadBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
-  helpMate.Wait("GPU");
+  helpMate.Execute(0, size, size, 0, 0, "DEF");
+
+
+
+ // helpMate.ReadBuffer("GPU", 2, CL_FALSE, 0, mySizes[2], C);
+ // helpMate.Wait("GPU");
 
   for (int i = 0; i < size * size; i++) {
     if (C[i] != size * 2){ 
@@ -114,6 +107,9 @@ void clSumVectors(int size, int sizeOffset) {
   helpMate.Start("CPU", CL_FALSE, 0, sizeOffset, size - sizeOffset, NULL);
   helpMate.Wait("GPU");
   helpMate.Wait("CPU");
+  
+
+  //helpMate.Execute();
 
   helpMate.ReadBuffer("GPU", 2, CL_TRUE, 0, mySizes[2], C);
 

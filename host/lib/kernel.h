@@ -24,6 +24,7 @@ class kernel {
   cl::Kernel* GetFunctionPoint(unsigned int index);
   void SetBuffer(cl::Context myContext, size_t mySize);
   cl::Buffer GetBuffer(unsigned int index);
+  unsigned int GetSizeBuffers();
   void SetArg(cl::Kernel& myKernelFunction, unsigned int numbArg,
               cl::Buffer myBuffer);
   cl::Program::Sources GetSources();
@@ -74,6 +75,8 @@ void kernel::SetBuffer(cl::Context myContext, size_t mySize) {
 }
 
 cl::Buffer kernel::GetBuffer(unsigned int index) { return clBuffers[index]; }
+
+inline unsigned int kernel::GetSizeBuffers() { return clBuffers.size(); }
 
 cl::Kernel* kernel::GetFunctionPoint(unsigned int index) {
   return &clKernelFunctions[index];

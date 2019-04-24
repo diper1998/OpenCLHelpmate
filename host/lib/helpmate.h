@@ -9,8 +9,7 @@
 #include "program.h"
 
 class helpmate {
-
- public:
+ protected:
 
   kernel clKernel;
   device clDevice;
@@ -18,6 +17,11 @@ class helpmate {
 
   cl::CommandQueue commandQueueCPU;
   cl::CommandQueue commandQueueGPU;
+
+  std::vector<size_t> sizesData;
+  std::vector<void*> ptrsData;
+
+ public:
 
   void SetKernel(std::string myFileName);
   void SetKernelFunctions(std::vector<std::string> myFunctionsNames);
@@ -30,6 +34,9 @@ class helpmate {
                    size_t bufferSize, const void* ptrOrigin);
   void SetArgument(unsigned int indexFunction, unsigned int indexArg,
                    unsigned int indexBuffer);
+
+  void SetArgument(unsigned int indexFunction, unsigned int indexArg,
+                   size_t sizeArgument, void* ptrData, std::string myDevice = "GPU");
   void Start(std::string myDevice, unsigned int blockingStart,
              unsigned int indexFunction, unsigned int offset,
              size_t globalRange, size_t localRange);
@@ -39,11 +46,19 @@ class helpmate {
              unsigned int myOffsetY, size_t myGlobalRangeX,
              size_t myGlobalRangeY, size_t myLocalRangeX, size_t myLocalRangeY);
 
+  void Execute(unsigned int indexFunction, size_t globalRange,
+               size_t localRange, std::string myMode);
+  void Execute(unsigned int indexFunction, size_t globalRangeX,
+               size_t globalRangeY, size_t localRangeX, size_t localRangeY,
+               std::string myMode);
+
+
   void ReadBuffer(std::string myDevice, unsigned int bufferIndex,
                   unsigned int blockingRead, unsigned int myOffset,
                   size_t bufferSize, void* ptrResult);
 
   void Wait(std::string myDevice);
+
 
   helpmate(std::string myFileName, std::vector<std::string> myFunctionsNames);
   helpmate();
@@ -128,6 +143,23 @@ void helpmate::SetArgument(unsigned int indexFunction, unsigned int indexArg,
                   clKernel.GetBuffer(indexBuffer));
 }
 
+void helpmate::SetArgument(unsigned int indexFunction, unsigned int indexArg, size_t sizeArgument,
+                                  void* ptrData, std::string myDevice) {
+
+    sizesData.push_back(sizeArgument);
+  
+    ptrsData.push_back(ptrData);
+
+    unsigned int indexBuffer = clKernel.GetSizeBuffers();
+
+    clKernel.SetBuffer(clDevice.GetContext(), sizeArgument);
+
+    WriteBuffer(myDevice, indexArg, CL_TRUE, 0, sizeArgument, ptrData);
+    
+    clKernel.SetArg(*clKernel.GetFunctionPoint(indexFunction), indexArg,
+                     clKernel.GetBuffer(indexBuffer));
+}
+
 void helpmate::Start(std::string myDevice, unsigned int blockingStart,
                      unsigned int indexFunction, unsigned int myOffsetX,
                      size_t myGlobalRangeX, size_t myLocalRangeX) {
@@ -210,6 +242,45 @@ void helpmate::Start(std::string myDevice, unsigned int blockingStart,
       commandQueueGPU.finish();
     }
   }
+}
+
+inline void helpmate::Execute(unsigned int indexFunction, size_t globalRangeX,
+                              size_t globalRangeY, size_t localRangeX,
+                              size_t localRangeY, std::string myMode) {
+  
+    size_t cpuSizeOffsetX = 0;
+    size_t cpuSizeOffsetY = 0;
+    size_t gpuSizeOffsetX = 0;
+    size_t gpuSizeOffsetY = 0;
+    size_t cpuSizeX = 0;
+    size_t cpuSizeY = 0;
+    size_t gpuSizeX = 0;
+    size_t gpuSizeY = 0;
+
+  if (myMode == "DEF") {
+
+    cpuSizeOffsetX = int(globalRangeX / 2) + globalRangeX % 2;
+    cpuSizeOffsetY = 0;
+    gpuSizeOffsetX = 0;
+    gpuSizeOffsetY = 0;
+    cpuSizeX = globalRangeX - cpuSizeOffsetX;
+    cpuSizeY = globalRangeY;
+    gpuSizeX = int(globalRangeX / 2) + globalRangeX % 2;
+    gpuSizeY = globalRangeY;
+
+    Start("GPU", CL_FALSE, indexFunction, gpuSizeOffsetX, gpuSizeOffsetY,
+          gpuSizeX, gpuSizeY, localRangeX, localRangeY);
+    Start("CPU", CL_FALSE, indexFunction, cpuSizeOffsetX, cpuSizeOffsetY,
+          cpuSizeX, cpuSizeY, localRangeX, localRangeY);
+      Wait("GPU");
+      Wait("CPU");
+  }
+
+  for (int i = 0; i < ptrsData.size(); i++) {
+    ReadBuffer("GPU", i, CL_TRUE, 0, sizesData[i], ptrsData[i]);
+  }
+  
+
 }
 
 void helpmate::ReadBuffer(std::string myDevice, unsigned int bufferIndex,
