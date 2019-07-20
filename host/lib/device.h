@@ -1,13 +1,12 @@
 #pragma once
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.hpp>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 class device {
  protected:
-
   // Platforms
   std::vector<cl::Platform> allPlatforms;
   std::vector<cl::Platform> allPlatformCPU;
@@ -27,7 +26,6 @@ class device {
   cl::Context clContext;
 
  public:
-
   void SetDevices();
   void GetDevicesInfo();
 

@@ -1,22 +1,18 @@
 #pragma once
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.hpp>
-#include <iostream>
-#include <Windows.h>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 class kernel {
-
  protected:
-  
   std::string clKernelCode;
   std::vector<cl::Kernel> clKernelFunctions;
   cl::Program::Sources clSources;
   std::vector<cl::Buffer> clBuffers;
 
  public:
-  
   std::string ReadKernelCode(std::string myFileName);
   void SetSources(std::string myKernelCode);
   void GetKernelCodeInfo();
@@ -27,8 +23,10 @@ class kernel {
   unsigned int GetSizeBuffers();
   void SetArg(cl::Kernel& myKernelFunction, unsigned int numbArg,
               cl::Buffer myBuffer);
+  void SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
+              size_t mySizeData, const void* myPtrData);
   cl::Program::Sources GetSources();
-  
+
   kernel();
   ~kernel();
 };
@@ -41,8 +39,7 @@ std::string kernel::ReadKernelCode(std::string myFileName) {
   if (!myFile.is_open()) {
     std::cout << "ERROR:";
     std::cout << "ReadKernelCode():";
-    std::cout << myFileName << " isn't open.";
-    exit(1);
+    std::cout << myFileName << " isn't finded.";
   }
   myFile.seekg(0, std::ios::end);
   size_t size = myFile.tellg();
@@ -84,5 +81,12 @@ cl::Kernel* kernel::GetFunctionPoint(unsigned int index) {
 
 void kernel::SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
                     cl::Buffer myBuffer) {
-  myKernelFunction.setArg(indexArg, myBuffer);
+  if (myKernelFunction.setArg(indexArg, myBuffer) != CL_SUCCESS)
+    std::cout << "Error setArg: " << indexArg << std::endl;
+}
+
+void kernel::SetArg(cl::Kernel& myKernelFunction, unsigned int indexArg,
+                    size_t mySizeData, const void* myPtrData) {
+  if (myKernelFunction.setArg(indexArg, mySizeData, myPtrData) != CL_SUCCESS)
+    std::cout << "Error setArg: " << indexArg << std::endl;
 }
